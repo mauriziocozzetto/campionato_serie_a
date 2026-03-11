@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serie A - Registra Gol</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-[#0f172a] text-white min-h-screen flex items-center justify-center p-6 font-sans">
+
+    <div
+        class="w-full max-w-md bg-white rounded-3xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.7)] overflow-hidden border border-slate-200">
+        <div class="bg-slate-900 p-6 text-center">
+            <h2 class="text-cyan-400 text-2xl font-black uppercase tracking-tighter">Inserimento Marcatore</h2>
+            <p class="text-slate-400 text-[10px] uppercase tracking-[0.3em] mt-1 font-bold">Client-Side Rendering</p>
+        </div>
+
+        <form id="scorerForm" class="p-8 space-y-6 text-slate-800">
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">Seleziona Evento</label>
+                <select id="match_selector" name="match_id" required
+                    class="w-full border-2 border-slate-100 rounded-2xl p-4 bg-slate-50 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all font-bold text-slate-700">
+                    <option value="" disabled selected>Caricamento partite...</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">Squadra che ha
+                    segnato</label>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="team_side" value="home" checked class="hidden peer">
+                        <div
+                            class="p-4 border-2 border-slate-100 rounded-2xl peer-checked:border-cyan-50 peer-checked:border-cyan-500 text-center transition-all">
+                            <span id="label_home"
+                                class="block font-black uppercase text-xs text-slate-400 peer-checked:text-cyan-600">Casa</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="team_side" value="away" class="hidden peer">
+                        <div
+                            class="p-4 border-2 border-slate-100 rounded-2xl peer-checked:border-cyan-50 peer-checked:border-cyan-500 text-center transition-all">
+                            <span id="label_away"
+                                class="block font-black uppercase text-xs text-slate-400 peer-checked:text-cyan-600">Ospite</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <div class="col-span-2">
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">Marcatore</label>
+                    <input type="text" name="player_name" required placeholder="Cognome"
+                        class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-cyan-500 outline-none font-bold">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">Minuto</label>
+                    <input type="number" name="minute" min="1" max="125" required placeholder="90"
+                        class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-cyan-500 outline-none font-bold text-center">
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn"
+                class="w-full bg-[#0f172a] hover:bg-cyan-600 text-white font-black py-5 rounded-2xl transition-all shadow-xl uppercase tracking-widest text-sm">
+                Salva e Aggiorna Risultato
+            </button>
+
+            <a href="/"
+                class="block text-center text-slate-400 text-[10px] font-bold uppercase hover:text-slate-600 transition-colors">
+                Torna al calendario
+            </a>
+        </form>
+    </div>
+
+    <script>
+        const selector = document.getElementById('match_selector');
+        const labelHome = document.getElementById('label_home');
+        const labelAway = document.getElementById('label_away');
+        const form = document.getElementById('scorerForm');
+        const btn = document.getElementById('submitBtn');
+
+        // Funzione per resettare lo stato del pulsante
+        function resetBtn() {
+            btn.disabled = false;
+            btn.innerText = "Salva e Aggiorna Risultato";
+        }
+
+        // Forza il reset se l'utente torna indietro con il browser
+        window.addEventListener('pageshow', (event) => {
+            resetBtn();
+        });
+
+        async function loadMatches() {
+            try {
+                const response = await fetch('/api/matchdays');
+                const data = await response.json();
+                selector.innerHTML = '';
+                data.forEach(day => {
+                    day.matches.forEach(m => {
+                        const option = document.createElement('option');
+                        option.value = m.id;
+                        option.textContent = `${m.home_team.name} vs ${m.away_team.name} (${m.date})`;
+                        option.setAttribute('data-home', m.home_team.name);
+                        option.setAttribute('data-away', m.away_team.name);
+                        selector.appendChild(option);
+                    });
+                });
+                updateLabels();
+            } catch (error) {
+                console.error("Errore caricamento match:", error);
+            }
+        }
+
+        function updateLabels() {
+            const opt = selector.options[selector.selectedIndex];
+            if (opt) {
+                labelHome.innerText = opt.getAttribute('data-home');
+                labelAway.innerText = opt.getAttribute('data-away');
+            }
+        }
+
+        selector.addEventListener('change', updateLabels);
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            btn.disabled = true;
+            btn.innerText = "Salvataggio...";
+
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/api/save-scorer', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    // Il reindirizzamento svuota lo stato, ma il listener pageshow 
+                    // gestirà il caso in cui l'utente clicchi "indietro"
+                    window.location.href = `/detail?id=${result.match_id}`;
+                } else {
+                    alert("Errore durante il salvataggio.");
+                    resetBtn();
+                }
+            } catch (error) {
+                console.error("Errore invio form:", error);
+                resetBtn();
+            }
+        };
+
+        window.onload = loadMatches;
+    </script>
+</body>
+
+</html>
