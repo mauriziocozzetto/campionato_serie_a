@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serie A 2026 - Calendario</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-[#0f172a] text-white min-h-screen font-sans pb-24">
+
+    <div id="matchdays-root" class="max-w-5xl mx-auto p-4 md:p-8">
+        <div class="flex justify-center items-center h-64">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
+        </div>
+    </div>
+
+    <div class="fixed bottom-8 right-8 z-50">
+        <a href="/add-scorer"
+            class="bg-cyan-500 hover:bg-cyan-400 text-[#0f172a] w-16 h-16 rounded-full shadow-[0_0_30px_rgba(6,182,212,0.5)] flex items-center justify-center transition-all hover:scale-110 active:scale-95 border-4 border-[#0f172a]">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
+            </svg>
+        </a>
+    </div>
+
+    <script>
+        function getInitials(name) {
+            return name.charAt(0).toUpperCase();
+        }
+
+        // Renderizza il logo o l'iniziale in caso di errore
+        // Funzione aggiornata per gestire il fallback sulle iniziali
+        function renderTeamLogo(team) {
+            const initial = team.name.charAt(0).toUpperCase();
+            return `
+        <div class="w-10 h-10 flex-shrink-0 bg-white rounded-full flex items-center justify-center border border-slate-100 shadow-inner overflow-hidden">
+            <img src="${team.logo_url}" 
+                 style="display:none"
+                 class="w-full h-full object-contain" 
+                 onload="this.style.display='block'"
+                 onerror="this.style.display='none'; this.parentElement.insertAdjacentHTML('beforeend', '<span style=&quot;color:#000000; font-size:18px; font-weight:bold; display:block; line-height:1;&quot;>${initial}</span>')">
+        </div>
+    `;
+        }
+
+        async function renderIndex() {
+            try {
+                const res = await fetch('/api/matchdays');
+                const matchdays = await res.json();
+                const root = document.getElementById('matchdays-root');
+
+                root.innerHTML = matchdays.map(day => `
+                    <div class="mb-16">
+                        <div class="flex items-center space-x-4 mb-8">
+                            <div class="h-px bg-cyan-500/30 flex-1"></div>
+                            <h2 class="text-cyan-400 font-black text-2xl uppercase tracking-widest">
+                                MATCHDAY ${day.number}
+                            </h2>
+                            <div class="h-px bg-cyan-500/30 flex-1"></div>
+                        </div>
+                        ${renderGroups(day.matches)}
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('matchdays-root').innerHTML = '<p class="text-center text-red-400">Errore caricamento dati.</p>';
+            }
+        }
+
+        function renderGroups(matches) {
+            const groups = matches.reduce((acc, m) => {
+                acc[m.date] = [...(acc[m.date] || []), m];
+                return acc;
+            }, {});
+
+            return Object.entries(groups).map(([date, ms]) => `
+                <div class="mb-10">
+                    <div class="flex justify-center mb-4">
+                        <span class="bg-cyan-500 text-[#0f172a] font-bold py-1 px-6 rounded-full text-sm shadow-lg shadow-cyan-500/20">${date}</span>
+                    </div>
+                    <div class="grid gap-3">
+                        ${ms.map(match => `
+                            <a href="/detail?id=${match.id}"
+                                class="group bg-white hover:bg-slate-50 transition-all duration-200 rounded-xl p-4 flex items-center shadow-xl border border-transparent hover:border-cyan-400/50">
+                                <div class="w-16 flex flex-col items-start border-r border-slate-100 pr-4">
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase">Inizio</span>
+                                    <span class="text-slate-900 font-black text-sm">${match.start_time}</span>
+                                </div>
+                                <div class="flex-1 flex items-center justify-between px-4">
+                                    <div class="flex items-center justify-end flex-1 space-x-3 text-right">
+                                        <span class="text-[#0f172a] font-extrabold text-sm md:text-lg uppercase truncate">${match.home_team.name}</span>
+                                        ${renderTeamLogo(match.home_team)}
+                                    </div>
+                                    <div class="flex items-center space-x-3 mx-4 bg-slate-800 px-4 py-2 rounded-lg shadow-inner group-hover:bg-cyan-600 transition-colors">
+                                        <span class="text-xl md:text-2xl font-black text-white">${match.home_score}</span>
+                                        <span class="text-slate-500 font-light">|</span>
+                                        <span class="text-xl md:text-2xl font-black text-white">${match.away_score}</span>
+                                    </div>
+                                    <div class="flex items-center justify-start flex-1 space-x-3 text-left">
+                                        ${renderTeamLogo(match.away_team)}
+                                        <span class="text-[#0f172a] font-extrabold text-sm md:text-lg uppercase truncate">${match.away_team.name}</span>
+                                    </div>
+                                </div>
+                                <div class="hidden md:flex items-center justify-center w-12 opacity-30 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all">
+                                    <div class="border-2 border-slate-900 px-1 py-0.5 text-[8px] font-black text-slate-900 rounded">LIVE</div>
+                                </div>
+                            </a>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+        window.onload = renderIndex;
+    </script>
+</body>
+
+</html>
