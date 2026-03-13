@@ -45,7 +45,6 @@
     </div>
 
     <script>
-        // Funzione aggiornata per la pagina di dettaglio
         function createIcon(team) {
             const initial = team.name.charAt(0).toUpperCase();
             return `
@@ -60,11 +59,12 @@
         }
 
         async function loadMatchDetail() {
-            const params = new URLSearchParams(window.location.search);
-            const matchId = params.get('id');
+            // Legge il matchId dal path: /matches/9 → ["", "matches", "9"]
+            const pathParts = window.location.pathname.split('/');
+            const matchId = pathParts[pathParts.length - 1];
 
             try {
-                const response = await fetch(`/api/matches/${matchId}`);
+                const response = await fetch(`/api/matchdays/28/matches/${matchId}`);
                 const match = await response.json();
 
                 document.title = `${match.home_team.name} vs ${match.away_team.name}`;
@@ -76,7 +76,7 @@
                     <div class="flex items-center justify-center space-x-6 md:space-x-16 w-full">
                         <div class="text-center w-32 md:w-48">
                             ${createIcon(match.home_team)}
-                            <h1 class="text-xl md:text-3xl font-black uppercase  tracking-tighter">${match.home_team.name}</h1>
+                            <h1 class="text-xl md:text-3xl font-black uppercase tracking-tighter">${match.home_team.name}</h1>
                         </div>
 
                         <div class="text-6xl md:text-8xl font-black flex items-center space-x-4">
@@ -87,7 +87,7 @@
 
                         <div class="text-center w-32 md:w-48">
                             ${createIcon(match.away_team)}
-                            <h1 class="text-xl md:text-3xl font-black uppercase  tracking-tighter">${match.away_team.name}</h1>
+                            <h1 class="text-xl md:text-3xl font-black uppercase tracking-tighter">${match.away_team.name}</h1>
                         </div>
                     </div>
                     <span class="mt-6 font-bold text-xs tracking-[0.5em] text-white/40 uppercase">Finita</span>
