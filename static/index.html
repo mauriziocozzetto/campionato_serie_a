@@ -31,8 +31,6 @@
             return name.charAt(0).toUpperCase();
         }
 
-        // Renderizza il logo o l'iniziale in caso di errore
-        // Funzione aggiornata per gestire il fallback sulle iniziali
         function renderTeamLogo(team) {
             const initial = team.name.charAt(0).toUpperCase();
             return `
@@ -82,7 +80,7 @@
                     </div>
                     <div class="grid gap-3">
                         ${ms.map(match => `
-                            <a href="/detail?id=${match.id}"
+                            <a href="/matches/${match.id}"
                                 class="group bg-white hover:bg-slate-50 transition-all duration-200 rounded-xl p-4 flex items-center shadow-xl border border-transparent hover:border-cyan-400/50">
                                 <div class="w-16 flex flex-col items-start border-r border-slate-100 pr-4">
                                     <span class="text-[10px] text-slate-400 font-bold uppercase">Inizio</span>
