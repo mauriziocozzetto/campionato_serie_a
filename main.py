@@ -131,10 +131,14 @@ async def read_detail(match_id: int):
     return FileResponse('static/detail.html')
 
 
+@app.get("/matches/{match_id}/scorers/new")
+async def read_add_scorer(match_id: int):
+    return FileResponse('static/add_scorer.html')
+
+
 @app.get("/add-scorer")
 async def read_add_scorer():
     return FileResponse('static/add_scorer.html')
-
 
 # --- API ENDPOINTS ---
 
