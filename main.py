@@ -126,13 +126,18 @@ async def read_index():
     return FileResponse('static/index.html')
 
 
-@app.get("/detail")
-async def read_detail():
+@app.get("/matches/{match_id}")
+async def read_detail(match_id: int):
     return FileResponse('static/detail.html')
 
 
+@app.get("/matches/{match_id}/scorers/new")
+async def read_add_scorer(match_id: int):
+    return FileResponse('static/add_scorer.html')
+
+
 @app.get("/add-scorer")
-async def read_add():
+async def read_add_scorer():
     return FileResponse('static/add_scorer.html')
 
 # --- API ENDPOINTS ---
@@ -141,7 +146,6 @@ async def read_add():
 @app.get("/api/matchdays")
 async def get_matchdays():
     result = []
-    # Ordiniamo le giornate per numero
     for day_num in sorted(db_matchdays_structure.keys()):
         match_ids = db_matchdays_structure[day_num]
         matches_list = [db_matches[mid]
@@ -150,21 +154,27 @@ async def get_matchdays():
     return result
 
 
-@app.get("/api/matches/{match_id}")
-async def get_match(match_id: int):
+@app.get("/api/matchdays/{matchday_id}/matches/{match_id}")
+async def get_match(matchday_id: int, match_id: int):
+    # Verifica che la giornata esista e contenga la partita richiesta
+    match_ids = db_matchdays_structure.get(matchday_id)
+    if not match_ids or match_id not in match_ids:
+        raise HTTPException(status_code=404, detail="Match not found")
+
     match = db_matches.get(match_id)
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
+
     return match
 
 
-@app.post("/api/save-scorer")
-async def save_scorer(match_id: int = Form(...), player_name: str = Form(...),
-                      minute: int = Form(...), team_side: str = Form(...)):
+@app.post("/api/matches/{match_id}/scorers")
+async def add_scorer(match_id: int, player_name: str = Form(...),
+                     minute: int = Form(...), team_side: str = Form(...)):
 
     match = db_matches.get(match_id)
     if not match:
-        raise HTTPException(status_code=404)
+        raise HTTPException(status_code=404, detail="Match not found")
 
     match.scorers.append(
         Scorer(name=player_name, minute=minute, team_side=team_side))
