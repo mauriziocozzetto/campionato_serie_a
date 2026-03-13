@@ -81,13 +81,11 @@
         const form = document.getElementById('scorerForm');
         const btn = document.getElementById('submitBtn');
 
-        // Funzione per resettare lo stato del pulsante
         function resetBtn() {
             btn.disabled = false;
             btn.innerText = "Salva e Aggiorna Risultato";
         }
 
-        // Forza il reset se l'utente torna indietro con il browser
         window.addEventListener('pageshow', (event) => {
             resetBtn();
         });
@@ -129,18 +127,17 @@
             btn.innerText = "Salvataggio...";
 
             const formData = new FormData(form);
+            const matchId = selector.value;
 
             try {
-                const response = await fetch('/api/save-scorer', {
+                const response = await fetch(`/api/matches/${matchId}/scorers`, {
                     method: 'POST',
                     body: formData
                 });
 
                 if (response.ok) {
                     const result = await response.json();
-                    // Il reindirizzamento svuota lo stato, ma il listener pageshow 
-                    // gestirà il caso in cui l'utente clicchi "indietro"
-                    window.location.href = `/detail?id=${result.match_id}`;
+                    window.location.href = `/matches/${result.match_id}`;
                 } else {
                     alert("Errore durante il salvataggio.");
                     resetBtn();
